@@ -26,7 +26,7 @@ Usage: python3 tamatch.py [student.xlsx courses.xlsx output.xlsx]
 
 
 def parse_list(value):
-    """Parse a comma/whitespace separated string into a list of stripped tokens."""
+    """Parse a comma/whitespace separated string into a list of trimmed tokens."""
     if pd.isna(value) or str(value).strip() == "":
         return []
     return [x.strip() for x in re.split(r"[,\s]+", str(value).strip()) if x.strip()]
@@ -136,6 +136,36 @@ def stable_match(student_prefs, course_data):
     return assignments
 
 
+def find_warnings(student_path, course_path):
+    """Check for references to nonexistent student IDs or course names."""
+    sdf = pd.read_excel(student_path)
+    sdf.columns = [c.strip().lower() for c in sdf.columns]
+    cdf = pd.read_excel(course_path)
+    cdf.columns = [c.strip().lower() for c in cdf.columns]
+
+    student_ids = {str(row["studentid"]).strip() for _, row in sdf.iterrows() if str(row["studentid"]).strip()}
+    course_names = {str(row["course"]).strip() for _, row in cdf.iterrows() if str(row["course"]).strip()}
+
+    warnings = []
+    for _, row in sdf.iterrows():
+        sid = str(row["studentid"]).strip()
+        if not sid:
+            continue
+        for c in parse_list(row.get("preferredcourse", "")) + parse_list(row.get("nonpreferredcourse", "")):
+            if c not in course_names:
+                warnings.append(f"Student {sid} mentioned nonexistent course {c}")
+
+    for _, row in cdf.iterrows():
+        cn = str(row["course"]).strip()
+        if not cn:
+            continue
+        for s in parse_list(row.get("preferredstudents", "")) + parse_list(row.get("nonpreferredstudents", "")):
+            if s not in student_ids:
+                warnings.append(f"Course {cn} mentioned nonexistent student {s}")
+
+    return warnings
+
+
 def build_output(student_prefs, course_data, assignments):
     """Build the output rows from assignments."""
     matched = set()
@@ -169,6 +199,13 @@ def main():
     else:
         print(USAGE, file=sys.stderr)
         sys.exit(1)
+
+    warnings = find_warnings(student_path, course_path)
+    if warnings:
+        print(f"\nWarnings ({len(warnings)}):")
+        for w in warnings:
+            print(f"  {w}")
+        print()
 
     student_prefs = load_students(student_path)
     course_data = load_courses(course_path)

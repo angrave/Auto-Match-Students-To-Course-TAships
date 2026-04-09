@@ -88,6 +88,7 @@ button:hover { opacity: 0.85; }
 .btn-success { background: #2b8a3e; color: #fff; }
 .btn-secondary { background: #495057; color: #fff; }
 .btn-example { background: #7048e8; color: #fff; }
+.btn-danger { background: #c92a2a; color: #fff; }
 .actions { margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .download-actions { display: none; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
 
@@ -101,7 +102,21 @@ button:hover { opacity: 0.85; }
   margin-bottom: 1rem;
   display: none;
 }
-.alert-error[role="alert"] { /* specificity boost for screen readers */ }
+
+/* ── Warnings ────────────────────────────────────────────────────── */
+.alert-warning {
+  background: #fff9db;
+  border: 1px solid #e67700;
+  color: #744210;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  display: none;
+}
+.alert-warning .warning-heading {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
 
 /* ── Info box ────────────────────────────────────────────────────── */
 .info {
@@ -127,8 +142,8 @@ button:hover { opacity: 0.85; }
   background: #fff;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
-.table-scroll-input  { max-height: 22rem; /* ~10 rows + header */ }
-.table-scroll-output { max-height: 42rem; /* ~20 rows + header */ }
+.table-scroll-input  { max-height: 22rem; }
+.table-scroll-output { max-height: 42rem; }
 table {
   width: 100%;
   border-collapse: collapse;
@@ -226,14 +241,24 @@ summary:focus-visible {
 </div>
 
 <div class="actions">
-  <button id="runBtn" class="btn-primary" disabled aria-describedby="runHint">Match</button>
-  <span id="runHint" class="visually-hidden"></span>
+  <button id="runBtn" class="btn-primary" disabled>Match</button>
   <button id="exampleBtn" class="btn-example" aria-label="Load example data — cycles through 12 test scenarios">Load Example Data</button>
+  <button id="clearBtn" class="btn-danger">Clear</button>
 </div>
 
 <div id="exampleLabel" class="example-label" aria-live="polite"></div>
 
 <div id="error" class="alert-error" role="alert"></div>
+
+<div id="warningSection" class="alert-warning" role="status" aria-live="polite">
+  <div class="warning-heading">Warnings: unrecognized names in preference lists</div>
+  <div class="table-wrap table-scroll-input" role="region" aria-label="Data warnings" tabindex="0">
+    <table id="warningTable" aria-label="Warnings about unrecognized student or course names">
+      <thead><tr><th scope="col">Source</th><th scope="col">Name</th><th scope="col">Mentions nonexistent</th><th scope="col">Type</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
 
 <!-- ── Input previews ──────────────────────────────────────────── -->
 <div id="inputPreviews" style="display:none;">
@@ -285,35 +310,77 @@ summary:focus-visible {
 "use strict";
 
 // ── State ──────────────────────────────────────────────────────────
-let studentData = null;
-let courseData = null;
-let outputRows = null;
-let exampleIndex = -1;
+var studentData = null;
+var courseData = null;
+var outputRows = null;
+var exampleIndex = -1;
 
 // ── DOM refs ───────────────────────────────────────────────────────
-const studentDrop   = document.getElementById("studentDrop");
-const courseDrop    = document.getElementById("courseDrop");
-const studentFileEl = document.getElementById("studentFile");
-const courseFileEl   = document.getElementById("courseFile");
-const studentStatus = document.getElementById("studentStatus");
-const courseStatus  = document.getElementById("courseStatus");
-const runBtn        = document.getElementById("runBtn");
-const exampleBtn    = document.getElementById("exampleBtn");
-const exampleLabel  = document.getElementById("exampleLabel");
-const errorDiv      = document.getElementById("error");
-const resultSection = document.getElementById("resultSection");
-const inputPreviews = document.getElementById("inputPreviews");
-const downloadActions = document.getElementById("downloadActions");
+var studentDrop   = document.getElementById("studentDrop");
+var courseDrop    = document.getElementById("courseDrop");
+var studentFileEl = document.getElementById("studentFile");
+var courseFileEl   = document.getElementById("courseFile");
+var studentStatus = document.getElementById("studentStatus");
+var courseStatus  = document.getElementById("courseStatus");
+var runBtn        = document.getElementById("runBtn");
+var exampleBtn    = document.getElementById("exampleBtn");
+var clearBtn      = document.getElementById("clearBtn");
+var exampleLabelEl = document.getElementById("exampleLabel");
+var errorDiv      = document.getElementById("error");
+var warningSection = document.getElementById("warningSection");
+var resultSection = document.getElementById("resultSection");
+var inputPreviews = document.getElementById("inputPreviews");
+var downloadActions = document.getElementById("downloadActions");
 
 // ── Safe text helper (XSS prevention) ─────────────────────────────
 function textNode(value) {
   return document.createTextNode(String(value));
 }
 
+// ── Clear everything ──────────────────────────────────────────────
+clearBtn.addEventListener("click", function() {
+  studentData = null;
+  courseData = null;
+  outputRows = null;
+  exampleIndex = -1;
+
+  studentStatus.textContent = "";
+  courseStatus.textContent = "";
+  studentDrop.classList.remove("loaded");
+  courseDrop.classList.remove("loaded");
+  studentFileEl.value = "";
+  courseFileEl.value = "";
+
+  clearTable("studentTable");
+  clearTable("courseTable");
+  clearTable("resultTable");
+  clearTable("warningTable");
+
+  document.getElementById("studentTableSummary").textContent = "Student data";
+  document.getElementById("courseTableSummary").textContent = "Course data";
+
+  inputPreviews.style.display = "none";
+  resultSection.style.display = "none";
+  downloadActions.style.display = "none";
+  warningSection.style.display = "none";
+  exampleLabelEl.textContent = "";
+  hideError();
+  updateRunButton();
+});
+
+function clearTable(tableId) {
+  var table = document.getElementById(tableId);
+  var thead = table.querySelector("thead");
+  var tbody = table.querySelector("tbody");
+  // Keep the header for result/warning tables (static headers), clear dynamic ones
+  if (tableId === "studentTable" || tableId === "courseTable") {
+    thead.innerHTML = "";
+  }
+  tbody.innerHTML = "";
+}
+
 // ── File handling ──────────────────────────────────────────────────
 function setupDropZone(zone, fileInput, onLoaded) {
-  // Click on the zone triggers the file input (label already does it,
-  // but we also handle DnD)
   zone.addEventListener("dragover", function(e) {
     e.preventDefault();
     zone.classList.add("dragover");
@@ -398,7 +465,6 @@ function renderInputTable(tableId, rows) {
 
   var cols = Object.keys(rows[0]);
 
-  // Header
   var trH = document.createElement("tr");
   for (var c = 0; c < cols.length; c++) {
     var th = document.createElement("th");
@@ -408,7 +474,6 @@ function renderInputTable(tableId, rows) {
   }
   thead.appendChild(trH);
 
-  // Body
   for (var i = 0; i < rows.length; i++) {
     var tr = document.createElement("tr");
     for (var j = 0; j < cols.length; j++) {
@@ -424,7 +489,6 @@ function showInputPreviews() {
   if (studentData || courseData) {
     inputPreviews.style.display = "block";
   }
-  // Update detail summary counts
   if (studentData) {
     document.getElementById("studentTableSummary").textContent =
       "Student data (" + studentData.length + " row" + (studentData.length !== 1 ? "s" : "") + ")";
@@ -559,15 +623,98 @@ function buildOutput(studentPrefs, courseMap, assignments) {
   return rows;
 }
 
+// ── Warnings: detect unrecognized references ──────────────────────
+function findWarnings(studentRows, courseRows) {
+  var warnings = [];
+  var studentIds = {};
+  var courseNames = {};
+
+  // Collect known IDs (trimmed)
+  for (var i = 0; i < studentRows.length; i++) {
+    var sid = String(studentRows[i].studentid).trim();
+    if (sid) studentIds[sid] = true;
+  }
+  for (var i = 0; i < courseRows.length; i++) {
+    var cn = String(courseRows[i].course).trim();
+    if (cn) courseNames[cn] = true;
+  }
+
+  // Check student preferences for nonexistent courses
+  for (var i = 0; i < studentRows.length; i++) {
+    var sid = String(studentRows[i].studentid).trim();
+    if (!sid) continue;
+    var pref = parseList(studentRows[i].preferredcourse);
+    var nonpref = parseList(studentRows[i].nonpreferredcourse);
+    var all = pref.concat(nonpref);
+    for (var j = 0; j < all.length; j++) {
+      if (!courseNames[all[j]]) {
+        warnings.push({ source: "Student " + sid, name: all[j], what: "nonexistent course", type: "course" });
+      }
+    }
+  }
+
+  // Check course preferences for nonexistent students
+  for (var i = 0; i < courseRows.length; i++) {
+    var cn = String(courseRows[i].course).trim();
+    if (!cn) continue;
+    var pref = parseList(courseRows[i].preferredstudents);
+    var nonpref = parseList(courseRows[i].nonpreferredstudents);
+    var all = pref.concat(nonpref);
+    for (var j = 0; j < all.length; j++) {
+      if (!studentIds[all[j]]) {
+        warnings.push({ source: "Course " + cn, name: all[j], what: "nonexistent student", type: "student" });
+      }
+    }
+  }
+
+  return warnings;
+}
+
+function renderWarnings(warnings) {
+  var tbody = document.querySelector("#warningTable tbody");
+  tbody.innerHTML = "";
+
+  if (warnings.length === 0) {
+    warningSection.style.display = "none";
+    return;
+  }
+
+  for (var i = 0; i < warnings.length; i++) {
+    var w = warnings[i];
+    var tr = document.createElement("tr");
+
+    var tdSource = document.createElement("td");
+    tdSource.appendChild(textNode(w.source));
+    var tdName = document.createElement("td");
+    tdName.appendChild(textNode(w.name));
+    var tdWhat = document.createElement("td");
+    tdWhat.appendChild(textNode(w.what));
+    var tdType = document.createElement("td");
+    tdType.appendChild(textNode(w.type));
+
+    tr.appendChild(tdSource);
+    tr.appendChild(tdName);
+    tr.appendChild(tdWhat);
+    tr.appendChild(tdType);
+    tbody.appendChild(tr);
+  }
+
+  warningSection.style.display = "block";
+}
+
 // ── Run ────────────────────────────────────────────────────────────
 runBtn.addEventListener("click", function() {
   hideError();
+  warningSection.style.display = "none";
   try {
     var studentPrefs = loadStudents(studentData);
     var courseMap = loadCourses(courseData);
 
     if (Object.keys(studentPrefs).length === 0) throw new Error("No students found in student file.");
     if (Object.keys(courseMap).length === 0) throw new Error("No courses found in courses file.");
+
+    var warnings = findWarnings(studentData, courseData);
+    renderWarnings(warnings);
 
     var assignments = stableMatch(studentPrefs, courseMap);
     outputRows = buildOutput(studentPrefs, courseMap, assignments);
@@ -628,7 +775,6 @@ document.getElementById("downloadCsv").addEventListener("click", function() {
   var lines = ["student,course,combinedscore"];
   for (var i = 0; i < outputRows.length; i++) {
     var r = outputRows[i];
-    // Quote fields that might contain commas (defensive)
     lines.push(csvField(r.student) + "," + csvField(r.course) + "," + r.combinedscore);
   }
   var blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
@@ -788,7 +934,7 @@ exampleBtn.addEventListener("click", function() {
   exampleIndex = (exampleIndex + 1) % EXAMPLES.length;
   var ex = EXAMPLES[exampleIndex];
 
-  exampleLabel.textContent = "Example " + ex.name;
+  exampleLabelEl.textContent = "Example " + ex.name;
 
   studentData = ex.students;
   courseData = ex.courses;

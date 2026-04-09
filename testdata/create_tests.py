@@ -282,4 +282,48 @@ write("t12_mutual_dislike",
     }),
 )
 
+# ── Test 13: whitespace_trimming ────────────────────────────────────
+# IDs with leading/trailing spaces should be trimmed and still match
+write("t13_trimming",
+    pd.DataFrame({
+        "studentid": ["  Alice  ", "Bob "],
+        "preferredcourse": [" CS101 ", "CS201"],
+        "nonpreferredcourse": ["", ""],
+    }),
+    pd.DataFrame({
+        "course": [" CS101", "CS201 "],
+        "numbertaslots": [1, 1],
+        "preferredstudents": ["Alice ", " Bob"],
+        "nonpreferredstudents": ["", ""],
+    }),
+    pd.DataFrame({
+        "student": ["Alice", "Bob"],
+        "course": ["CS101", "CS201"],
+        "combinedscore": [200, 200],
+    }),
+)
+
+# ── Test 14: bad_references ─────────────────────────────────────────
+# Student mentions nonexistent course, course mentions nonexistent student.
+# Matching should still work; warnings are informational only.
+write("t14_bad_refs",
+    pd.DataFrame({
+        "studentid": ["Alice"],
+        "preferredcourse": ["CS101, CS999"],  # CS999 doesn't exist
+        "nonpreferredcourse": [""],
+    }),
+    pd.DataFrame({
+        "course": ["CS101"],
+        "numbertaslots": [1],
+        "preferredstudents": ["Alice, Zed"],  # Zed doesn't exist
+        "nonpreferredstudents": [""],
+    }),
+    pd.DataFrame({
+        # Alice still matches CS101 fine
+        "student": ["Alice"],
+        "course": ["CS101"],
+        "combinedscore": [200],  # 100 (student pref rank 1) + 100 (course pref rank 1)
+    }),
+)
+
 print("All test data created.")

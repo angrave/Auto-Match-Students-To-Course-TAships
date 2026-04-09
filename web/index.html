@@ -9,16 +9,35 @@
 *, *::before, *::after { box-sizing: border-box; }
 body {
   font-family: system-ui, -apple-system, sans-serif;
-  max-width: 900px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 1.5rem;
   color: #1a1a1a;
   background: #f8f9fa;
+  line-height: 1.5;
 }
 h1 { margin-bottom: 0.25rem; }
+h2 { font-size: 1.25rem; }
 .subtitle { color: #555; margin-top: 0; margin-bottom: 1.5rem; }
+
+/* ── Skip link ───────────────────────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0.5rem;
+  background: #228be6;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 0 0 6px 6px;
+  z-index: 100;
+  text-decoration: none;
+  font-weight: 600;
+}
+.skip-link:focus { top: 0; }
+
+/* ── Drop zones ──────────────────────────────────────────────────── */
 .drop-zone {
-  border: 2px dashed #adb5bd;
+  border: 2px dashed #636c76;
   border-radius: 8px;
   padding: 2rem;
   text-align: center;
@@ -26,121 +45,232 @@ h1 { margin-bottom: 0.25rem; }
   transition: border-color 0.2s, background 0.2s;
   margin-bottom: 0.75rem;
   background: #fff;
+  position: relative;
 }
-.drop-zone:hover, .drop-zone.dragover {
+.drop-zone:hover, .drop-zone:focus-within, .drop-zone.dragover {
   border-color: #228be6;
   background: #e7f5ff;
 }
 .drop-zone.loaded {
-  border-color: #40c057;
+  border-color: #2b8a3e;
   background: #ebfbee;
 }
-.drop-zone input[type="file"] { display: none; }
-.drop-label { font-size: 1.1rem; font-weight: 500; }
-.drop-hint { font-size: 0.85rem; color: #868e96; margin-top: 0.25rem; }
-.file-status { font-size: 0.9rem; color: #2b8a3e; font-weight: 500; margin-top: 0.5rem; }
+.drop-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+.drop-label { font-size: 1.1rem; font-weight: 600; }
+.drop-hint { font-size: 0.85rem; color: #555; margin-top: 0.25rem; }
+.file-status { font-size: 0.9rem; color: #1a7f37; font-weight: 600; margin-top: 0.5rem; }
 .inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
 button {
-  padding: 0.6rem 1.5rem;
+  padding: 0.6rem 1.25rem;
   font-size: 1rem;
-  border: none;
+  border: 2px solid transparent;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
+  transition: opacity 0.15s;
 }
-#runBtn {
-  background: #228be6;
-  color: #fff;
+button:focus-visible {
+  outline: 3px solid #228be6;
+  outline-offset: 2px;
 }
-#runBtn:disabled {
-  background: #adb5bd;
-  cursor: not-allowed;
-}
-#downloadBtn {
-  background: #40c057;
-  color: #fff;
-  margin-left: 0.5rem;
-  display: none;
-}
-.actions { margin-bottom: 1.5rem; }
-#error {
+button:hover { opacity: 0.85; }
+.btn-primary { background: #228be6; color: #fff; }
+.btn-primary:disabled { background: #adb5bd; cursor: not-allowed; opacity: 1; }
+.btn-success { background: #2b8a3e; color: #fff; }
+.btn-secondary { background: #495057; color: #fff; }
+.btn-example { background: #7048e8; color: #fff; }
+.actions { margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.download-actions { display: none; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+
+/* ── Error / alert ───────────────────────────────────────────────── */
+.alert-error {
   background: #fff5f5;
-  border: 1px solid #ffc9c9;
+  border: 1px solid #e03131;
   color: #c92a2a;
   padding: 0.75rem 1rem;
   border-radius: 6px;
   margin-bottom: 1rem;
   display: none;
 }
-#resultSection { display: none; }
-#resultSection h2 { margin-bottom: 0.5rem; }
+.alert-error[role="alert"] { /* specificity boost for screen readers */ }
+
+/* ── Info box ────────────────────────────────────────────────────── */
+.info {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  font-size: 0.9rem;
+}
+.info code {
+  background: #f1f3f5;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.85rem;
+}
+
+/* ── Tables ──────────────────────────────────────────────────────── */
+.table-wrap {
+  overflow: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.table-scroll-input  { max-height: 22rem; /* ~10 rows + header */ }
+.table-scroll-output { max-height: 42rem; /* ~20 rows + header */ }
 table {
   width: 100%;
   border-collapse: collapse;
-  background: #fff;
-  border-radius: 6px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  min-width: 100%;
 }
 th, td {
   padding: 0.5rem 0.75rem;
   text-align: left;
   border-bottom: 1px solid #e9ecef;
+  white-space: nowrap;
 }
-th { background: #f1f3f5; font-weight: 600; font-size: 0.9rem; }
+th {
+  background: #f1f3f5;
+  font-weight: 600;
+  font-size: 0.9rem;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
 td { font-size: 0.9rem; }
 tr:last-child td { border-bottom: none; }
-tr.negative { background: #fff5f5; }
-tr.positive-high { background: #ebfbee; }
+tr.row-negative { background: #fff5f5; }
+tr.row-positive-high { background: #ebfbee; }
 .score { font-weight: 600; font-variant-numeric: tabular-nums; }
-details { margin-top: 1.5rem; }
-summary { cursor: pointer; font-weight: 500; margin-bottom: 0.5rem; }
-.info { background: #fff; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08); font-size: 0.9rem; line-height: 1.5; }
-.info code { background: #f1f3f5; padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.85rem; }
+
+/* ── Collapsible sections ────────────────────────────────────────── */
+details { margin-bottom: 1rem; }
+summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.5rem 0;
+  font-size: 1rem;
+  user-select: none;
+}
+summary:focus-visible {
+  outline: 3px solid #228be6;
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* ── Result section ──────────────────────────────────────────────── */
+#resultSection { display: none; }
+#summary {
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: #e7f5ff;
+  border-radius: 6px;
+  border-left: 4px solid #228be6;
+}
+.example-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #5f3dc4;
+  margin-bottom: 0.5rem;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .inputs { grid-template-columns: 1fr; }
+  .actions { flex-direction: column; }
+  button { width: 100%; }
+}
 </style>
 </head>
 <body>
 
+<a href="#main" class="skip-link">Skip to main content</a>
+
+<main id="main">
 <h1>TA Slot Matcher</h1>
 <p class="subtitle">Stable-marriage matching of grad students to TA positions</p>
 
-<div class="info">
+<div class="info" role="region" aria-label="Input format instructions">
   <strong>Input formats:</strong><br>
-  <code>student.xlsx</code> &mdash; columns: <code>studentid</code>, <code>preferredcourse</code>, <code>nonpreferredcourse</code><br>
-  <code>courses.xlsx</code> &mdash; columns: <code>course</code>, <code>numbertaslots</code>, <code>preferredstudents</code>, <code>nonpreferredstudents</code><br>
+  <code>student.xlsx</code> — columns: <code>studentid</code>, <code>preferredcourse</code>, <code>nonpreferredcourse</code><br>
+  <code>courses.xlsx</code> — columns: <code>course</code>, <code>numbertaslots</code>, <code>preferredstudents</code>, <code>nonpreferredstudents</code><br>
   Preference lists are comma or whitespace separated, ranked most-preferred first.
 </div>
 
 <div class="inputs">
   <div class="drop-zone" id="studentDrop">
-    <input type="file" accept=".xlsx,.xls" id="studentFile">
-    <div class="drop-label">Student file</div>
-    <div class="drop-hint">Drop student.xlsx here or click to browse</div>
-    <div class="file-status" id="studentStatus"></div>
+    <label for="studentFile" class="drop-label">Student file</label>
+    <input type="file" accept=".xlsx,.xls" id="studentFile" aria-describedby="studentHint studentStatus">
+    <div class="drop-hint" id="studentHint">Drop student.xlsx here or click to browse</div>
+    <div class="file-status" id="studentStatus" aria-live="polite"></div>
   </div>
   <div class="drop-zone" id="courseDrop">
-    <input type="file" accept=".xlsx,.xls" id="courseFile">
-    <div class="drop-label">Courses file</div>
-    <div class="drop-hint">Drop courses.xlsx here or click to browse</div>
-    <div class="file-status" id="courseStatus"></div>
+    <label for="courseFile" class="drop-label">Courses file</label>
+    <input type="file" accept=".xlsx,.xls" id="courseFile" aria-describedby="courseHint courseStatus">
+    <div class="drop-hint" id="courseHint">Drop courses.xlsx here or click to browse</div>
+    <div class="file-status" id="courseStatus" aria-live="polite"></div>
   </div>
 </div>
 
 <div class="actions">
-  <button id="runBtn" disabled>Match</button>
-  <button id="downloadBtn">Download draftmatch.xlsx</button>
+  <button id="runBtn" class="btn-primary" disabled aria-describedby="runHint">Match</button>
+  <span id="runHint" class="visually-hidden"></span>
+  <button id="exampleBtn" class="btn-example" aria-label="Load example data — cycles through 12 test scenarios">Load Example Data</button>
 </div>
 
-<div id="error"></div>
+<div id="exampleLabel" class="example-label" aria-live="polite"></div>
 
-<div id="resultSection">
-  <h2>Results</h2>
-  <div id="summary"></div>
-  <table id="resultTable">
-    <thead><tr><th>Student</th><th>Course</th><th>Combined Score</th></tr></thead>
-    <tbody></tbody>
-  </table>
+<div id="error" class="alert-error" role="alert"></div>
+
+<!-- ── Input previews ──────────────────────────────────────────── -->
+<div id="inputPreviews" style="display:none;">
+  <details id="studentDetails" open>
+    <summary id="studentTableSummary">Student data</summary>
+    <div class="table-wrap table-scroll-input" role="region" aria-labelledby="studentTableSummary" tabindex="0">
+      <table id="studentTable" aria-label="Uploaded student data">
+        <thead></thead><tbody></tbody>
+      </table>
+    </div>
+  </details>
+
+  <details id="courseDetails" open>
+    <summary id="courseTableSummary">Course data</summary>
+    <div class="table-wrap table-scroll-input" role="region" aria-labelledby="courseTableSummary" tabindex="0">
+      <table id="courseTable" aria-label="Uploaded course data">
+        <thead></thead><tbody></tbody>
+      </table>
+    </div>
+  </details>
+</div>
+
+<!-- ── Results ──────────────────────────────────────────────────── -->
+<section id="resultSection" aria-labelledby="resultHeading">
+  <h2 id="resultHeading">Results</h2>
+  <div id="summary" aria-live="polite"></div>
+  <div class="table-wrap table-scroll-output" role="region" aria-labelledby="resultHeading" tabindex="0">
+    <table id="resultTable" aria-label="Matching results">
+      <thead><tr><th scope="col">Student</th><th scope="col">Course</th><th scope="col">Combined Score</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="download-actions" id="downloadActions">
+    <button id="downloadXlsx" class="btn-success">Download Excel (.xlsx)</button>
+    <button id="downloadCsv" class="btn-secondary">Download CSV (.csv)</button>
+  </div>
 
   <details>
     <summary>Scoring explanation</summary>
@@ -148,7 +278,8 @@ summary { cursor: pointer; font-weight: 500; margin-bottom: 0.5rem; }
     last&nbsp;=&nbsp;1. Nonpreferred rank 1&nbsp;=&nbsp;&minus;100, last&nbsp;=&nbsp;&minus;1.
     Unmentioned&nbsp;=&nbsp;0. The combined score is the sum of both sides (&minus;200 to +200).</p>
   </details>
-</div>
+</section>
+</main>
 
 <script>
 "use strict";
@@ -157,48 +288,55 @@ summary { cursor: pointer; font-weight: 500; margin-bottom: 0.5rem; }
 let studentData = null;
 let courseData = null;
 let outputRows = null;
+let exampleIndex = -1;
 
 // ── DOM refs ───────────────────────────────────────────────────────
-const studentDrop = document.getElementById("studentDrop");
-const courseDrop = document.getElementById("courseDrop");
-const studentFile = document.getElementById("studentFile");
-const courseFile = document.getElementById("courseFile");
+const studentDrop   = document.getElementById("studentDrop");
+const courseDrop    = document.getElementById("courseDrop");
+const studentFileEl = document.getElementById("studentFile");
+const courseFileEl   = document.getElementById("courseFile");
 const studentStatus = document.getElementById("studentStatus");
-const courseStatus = document.getElementById("courseStatus");
-const runBtn = document.getElementById("runBtn");
-const downloadBtn = document.getElementById("downloadBtn");
-const errorDiv = document.getElementById("error");
+const courseStatus  = document.getElementById("courseStatus");
+const runBtn        = document.getElementById("runBtn");
+const exampleBtn    = document.getElementById("exampleBtn");
+const exampleLabel  = document.getElementById("exampleLabel");
+const errorDiv      = document.getElementById("error");
 const resultSection = document.getElementById("resultSection");
+const inputPreviews = document.getElementById("inputPreviews");
+const downloadActions = document.getElementById("downloadActions");
+
+// ── Safe text helper (XSS prevention) ─────────────────────────────
+function textNode(value) {
+  return document.createTextNode(String(value));
+}
 
 // ── File handling ──────────────────────────────────────────────────
 function setupDropZone(zone, fileInput, onLoaded) {
-  zone.addEventListener("click", () => fileInput.click());
-  zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("dragover"); });
-  zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
-  zone.addEventListener("drop", e => {
+  // Click on the zone triggers the file input (label already does it,
+  // but we also handle DnD)
+  zone.addEventListener("dragover", function(e) {
+    e.preventDefault();
+    zone.classList.add("dragover");
+  });
+  zone.addEventListener("dragleave", function() {
+    zone.classList.remove("dragover");
+  });
+  zone.addEventListener("drop", function(e) {
     e.preventDefault();
     zone.classList.remove("dragover");
-    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0], zone, onLoaded);
+    if (e.dataTransfer.files.length) readXlsx(e.dataTransfer.files[0], zone, onLoaded);
   });
-  fileInput.addEventListener("change", () => {
-    if (fileInput.files.length) handleFile(fileInput.files[0], zone, onLoaded);
+  fileInput.addEventListener("change", function() {
+    if (fileInput.files.length) readXlsx(fileInput.files[0], zone, onLoaded);
   });
 }
 
-function handleFile(file, zone, onLoaded) {
-  const reader = new FileReader();
-  reader.onload = e => {
+function readXlsx(file, zone, onLoaded) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
     try {
-      const wb = XLSX.read(e.target.result, { type: "array" });
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-      // Normalize column names to lowercase trimmed
-      const normalized = rows.map(r => {
-        const out = {};
-        for (const k of Object.keys(r)) out[k.trim().toLowerCase()] = r[k];
-        return out;
-      });
-      onLoaded(normalized, file.name);
+      var rows = parseXlsxBuffer(e.target.result);
+      onLoaded(rows, file.name);
       zone.classList.add("loaded");
       hideError();
       updateRunButton();
@@ -209,14 +347,32 @@ function handleFile(file, zone, onLoaded) {
   reader.readAsArrayBuffer(file);
 }
 
-setupDropZone(studentDrop, studentFile, (rows, name) => {
+function parseXlsxBuffer(buf) {
+  var wb = XLSX.read(buf, { type: "array" });
+  var sheet = wb.Sheets[wb.SheetNames[0]];
+  var rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+  return rows.map(function(r) {
+    var out = {};
+    for (var k of Object.keys(r)) out[k.trim().toLowerCase()] = r[k];
+    return out;
+  });
+}
+
+function onStudentLoaded(rows, name) {
   studentData = rows;
-  studentStatus.textContent = name + " — " + rows.length + " student" + (rows.length !== 1 ? "s" : "");
-});
-setupDropZone(courseDrop, courseFile, (rows, name) => {
+  studentStatus.textContent = name + " \u2014 " + rows.length + " student" + (rows.length !== 1 ? "s" : "");
+  renderInputTable("studentTable", rows);
+  showInputPreviews();
+}
+function onCourseLoaded(rows, name) {
   courseData = rows;
-  courseStatus.textContent = name + " — " + rows.length + " course" + (rows.length !== 1 ? "s" : "");
-});
+  courseStatus.textContent = name + " \u2014 " + rows.length + " course" + (rows.length !== 1 ? "s" : "");
+  renderInputTable("courseTable", rows);
+  showInputPreviews();
+}
+
+setupDropZone(studentDrop, studentFileEl, onStudentLoaded);
+setupDropZone(courseDrop, courseFileEl, onCourseLoaded);
 
 function updateRunButton() {
   runBtn.disabled = !(studentData && courseData);
@@ -230,91 +386,138 @@ function hideError() {
   errorDiv.style.display = "none";
 }
 
+// ── Input table rendering (XSS-safe via textContent/textNode) ─────
+function renderInputTable(tableId, rows) {
+  var table = document.getElementById(tableId);
+  var thead = table.querySelector("thead");
+  var tbody = table.querySelector("tbody");
+  thead.innerHTML = "";
+  tbody.innerHTML = "";
+
+  if (!rows.length) return;
+
+  var cols = Object.keys(rows[0]);
+
+  // Header
+  var trH = document.createElement("tr");
+  for (var c = 0; c < cols.length; c++) {
+    var th = document.createElement("th");
+    th.setAttribute("scope", "col");
+    th.appendChild(textNode(cols[c]));
+    trH.appendChild(th);
+  }
+  thead.appendChild(trH);
+
+  // Body
+  for (var i = 0; i < rows.length; i++) {
+    var tr = document.createElement("tr");
+    for (var j = 0; j < cols.length; j++) {
+      var td = document.createElement("td");
+      td.appendChild(textNode(rows[i][cols[j]]));
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+}
+
+function showInputPreviews() {
+  if (studentData || courseData) {
+    inputPreviews.style.display = "block";
+  }
+  // Update detail summary counts
+  if (studentData) {
+    document.getElementById("studentTableSummary").textContent =
+      "Student data (" + studentData.length + " row" + (studentData.length !== 1 ? "s" : "") + ")";
+  }
+  if (courseData) {
+    document.getElementById("courseTableSummary").textContent =
+      "Course data (" + courseData.length + " row" + (courseData.length !== 1 ? "s" : "") + ")";
+  }
+}
+
 // ── Algorithm ──────────────────────────────────────────────────────
 function parseList(value) {
   if (value == null || String(value).trim() === "") return [];
-  return String(value).split(/[,\s]+/).map(s => s.trim()).filter(Boolean);
+  return String(value).split(/[,\s]+/).map(function(s) { return s.trim(); }).filter(Boolean);
 }
 
 function computeScores(preferred, nonpreferred) {
-  const scores = {};
-  const np = preferred.length;
-  for (let i = 0; i < np; i++) {
+  var scores = {};
+  var np = preferred.length;
+  for (var i = 0; i < np; i++) {
     scores[preferred[i]] = np > 1 ? Math.round(100 - i * (99 / (np - 1))) : 100;
   }
-  const nn = nonpreferred.length;
-  for (let i = 0; i < nn; i++) {
+  var nn = nonpreferred.length;
+  for (var i = 0; i < nn; i++) {
     scores[nonpreferred[i]] = nn > 1 ? Math.round(-100 + i * (99 / (nn - 1))) : -100;
   }
   return scores;
 }
 
 function loadStudents(rows) {
-  const students = {};
-  for (const row of rows) {
-    const sid = String(row.studentid).trim();
+  var students = {};
+  for (var r = 0; r < rows.length; r++) {
+    var row = rows[r];
+    var sid = String(row.studentid).trim();
     if (!sid) continue;
-    const pref = parseList(row.preferredcourse);
-    const nonpref = parseList(row.nonpreferredcourse);
-    students[sid] = computeScores(pref, nonpref);
+    students[sid] = computeScores(parseList(row.preferredcourse), parseList(row.nonpreferredcourse));
   }
   return students;
 }
 
 function loadCourses(rows) {
-  const courses = {};
-  for (const row of rows) {
-    const cname = String(row.course).trim();
+  var courses = {};
+  for (var r = 0; r < rows.length; r++) {
+    var row = rows[r];
+    var cname = String(row.course).trim();
     if (!cname) continue;
-    const slots = parseInt(row.numbertaslots, 10) || 0;
-    const pref = parseList(row.preferredstudents);
-    const nonpref = parseList(row.nonpreferredstudents);
-    courses[cname] = { slots, scores: computeScores(pref, nonpref) };
+    var slots = parseInt(row.numbertaslots, 10) || 0;
+    courses[cname] = { slots: slots, scores: computeScores(parseList(row.preferredstudents), parseList(row.nonpreferredstudents)) };
   }
   return courses;
 }
 
 function combinedScore(sid, course, studentPrefs, courseMap) {
-  const sScore = (studentPrefs[sid] || {})[course] || 0;
-  const cScore = ((courseMap[course] || {}).scores || {})[sid] || 0;
+  var sScore = (studentPrefs[sid] || {})[course] || 0;
+  var cScore = ((courseMap[course] || {}).scores || {})[sid] || 0;
   return sScore + cScore;
 }
 
 function stableMatch(studentPrefs, courseMap) {
-  const allCourses = Object.keys(courseMap);
+  var allCourses = Object.keys(courseMap);
+  var proposalLists = {};
+  var sids = Object.keys(studentPrefs);
 
-  // Build proposal lists sorted by combined score descending
-  const proposalLists = {};
-  for (const sid of Object.keys(studentPrefs)) {
-    proposalLists[sid] = allCourses.slice().sort(
-      (a, b) => combinedScore(sid, b, studentPrefs, courseMap) - combinedScore(sid, a, studentPrefs, courseMap)
-    );
+  for (var s = 0; s < sids.length; s++) {
+    var sid = sids[s];
+    proposalLists[sid] = allCourses.slice().sort(function(a, b) {
+      return combinedScore(sid, b, studentPrefs, courseMap) - combinedScore(sid, a, studentPrefs, courseMap);
+    });
   }
 
-  const assignments = {}; // course -> [{score, sid}]
-  for (const c of allCourses) assignments[c] = [];
-  const proposalIndex = {};
-  for (const sid of Object.keys(studentPrefs)) proposalIndex[sid] = 0;
-  const freeStudents = Object.keys(studentPrefs).slice();
+  var assignments = {};
+  for (var c = 0; c < allCourses.length; c++) assignments[allCourses[c]] = [];
+  var proposalIndex = {};
+  for (var s = 0; s < sids.length; s++) proposalIndex[sids[s]] = 0;
+  var freeStudents = sids.slice();
 
   while (freeStudents.length > 0) {
-    const sid = freeStudents.shift();
-    const idx = proposalIndex[sid];
-    if (idx >= allCourses.length) continue; // exhausted — goes to CS00
+    var sid = freeStudents.shift();
+    var idx = proposalIndex[sid];
+    if (idx >= allCourses.length) continue;
 
-    const course = proposalLists[sid][idx];
+    var course = proposalLists[sid][idx];
     proposalIndex[sid] = idx + 1;
-    const score = combinedScore(sid, course, studentPrefs, courseMap);
-    const slots = courseMap[course].slots;
+    var score = combinedScore(sid, course, studentPrefs, courseMap);
+    var slots = courseMap[course].slots;
 
     if (assignments[course].length < slots) {
-      assignments[course].push({ score, sid });
+      assignments[course].push({ score: score, sid: sid });
     } else {
-      // Find worst
-      assignments[course].sort((a, b) => a.score - b.score);
+      assignments[course].sort(function(a, b) { return a.score - b.score; });
       if (score > assignments[course][0].score) {
-        const worst = assignments[course][0];
-        assignments[course][0] = { score, sid };
+        var worst = assignments[course][0];
+        assignments[course][0] = { score: score, sid: sid };
         freeStudents.push(worst.sid);
       } else {
         freeStudents.push(sid);
@@ -325,30 +528,31 @@ function stableMatch(studentPrefs, courseMap) {
 }
 
 function buildOutput(studentPrefs, courseMap, assignments) {
-  const rows = [];
-  const matched = new Set();
+  var rows = [];
+  var matched = {};
 
-  for (const course of Object.keys(assignments)) {
-    const pairs = assignments[course].slice().sort((a, b) => b.score - a.score);
-    for (const { score, sid } of pairs) {
-      rows.push({ student: sid, course, combinedscore: score });
-      matched.add(sid);
+  var courses = Object.keys(assignments);
+  for (var c = 0; c < courses.length; c++) {
+    var course = courses[c];
+    var pairs = assignments[course].slice().sort(function(a, b) { return b.score - a.score; });
+    for (var p = 0; p < pairs.length; p++) {
+      rows.push({ student: pairs[p].sid, course: course, combinedscore: pairs[p].score });
+      matched[pairs[p].sid] = true;
     }
   }
 
-  // Unmatched → CS00
-  for (const sid of Object.keys(studentPrefs)) {
-    if (!matched.has(sid)) {
-      const score = combinedScore(sid, "CS00", studentPrefs, courseMap);
-      rows.push({ student: sid, course: "CS00", combinedscore: score });
+  var sids = Object.keys(studentPrefs);
+  for (var s = 0; s < sids.length; s++) {
+    if (!matched[sids[s]]) {
+      rows.push({ student: sids[s], course: "CS00", combinedscore: combinedScore(sids[s], "CS00", studentPrefs, courseMap) });
     }
   }
 
-  // Unfilled slots → todo
-  for (const [course, cdata] of Object.entries(courseMap)) {
-    const filled = (assignments[course] || []).length;
-    for (let i = 0; i < cdata.slots - filled; i++) {
-      rows.push({ student: "todo", course, combinedscore: 0 });
+  var courseNames = Object.keys(courseMap);
+  for (var c = 0; c < courseNames.length; c++) {
+    var filled = (assignments[courseNames[c]] || []).length;
+    for (var i = 0; i < courseMap[courseNames[c]].slots - filled; i++) {
+      rows.push({ student: "todo", course: courseNames[c], combinedscore: 0 });
     }
   }
 
@@ -356,44 +560,48 @@ function buildOutput(studentPrefs, courseMap, assignments) {
 }
 
 // ── Run ────────────────────────────────────────────────────────────
-runBtn.addEventListener("click", () => {
+runBtn.addEventListener("click", function() {
   hideError();
   try {
-    const studentPrefs = loadStudents(studentData);
-    const courseMap = loadCourses(courseData);
+    var studentPrefs = loadStudents(studentData);
+    var courseMap = loadCourses(courseData);
 
     if (Object.keys(studentPrefs).length === 0) throw new Error("No students found in student file.");
     if (Object.keys(courseMap).length === 0) throw new Error("No courses found in courses file.");
 
-    const assignments = stableMatch(studentPrefs, courseMap);
+    var assignments = stableMatch(studentPrefs, courseMap);
     outputRows = buildOutput(studentPrefs, courseMap, assignments);
     renderResults(outputRows);
-    downloadBtn.style.display = "inline-block";
+    downloadActions.style.display = "flex";
     resultSection.style.display = "block";
+    resultSection.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (err) {
     showError(err.message);
   }
 });
 
 function renderResults(rows) {
-  const tbody = document.querySelector("#resultTable tbody");
+  var tbody = document.querySelector("#resultTable tbody");
   tbody.innerHTML = "";
 
-  let matchedStudents = 0, unmatched = 0, unfilled = 0;
+  var matchedStudents = 0, unmatched = 0, unfilled = 0;
 
-  for (const r of rows) {
-    const tr = document.createElement("tr");
-    if (r.combinedscore < 0) tr.className = "negative";
-    else if (r.combinedscore >= 150) tr.className = "positive-high";
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    var tr = document.createElement("tr");
+    if (r.combinedscore < 0) tr.className = "row-negative";
+    else if (r.combinedscore >= 150) tr.className = "row-positive-high";
 
-    const tdS = document.createElement("td");
-    tdS.textContent = r.student;
-    const tdC = document.createElement("td");
-    tdC.textContent = r.course;
-    const tdScore = document.createElement("td");
-    tdScore.textContent = r.combinedscore;
+    var tdS = document.createElement("td");
+    tdS.appendChild(textNode(r.student));
+    var tdC = document.createElement("td");
+    tdC.appendChild(textNode(r.course));
+    var tdScore = document.createElement("td");
+    tdScore.appendChild(textNode(r.combinedscore));
     tdScore.className = "score";
-    tr.append(tdS, tdC, tdScore);
+    tr.appendChild(tdS);
+    tr.appendChild(tdC);
+    tr.appendChild(tdScore);
     tbody.appendChild(tr);
 
     if (r.student === "todo") unfilled++;
@@ -405,13 +613,199 @@ function renderResults(rows) {
     matchedStudents + " matched, " + unmatched + " unmatched (CS00), " + unfilled + " unfilled (todo)";
 }
 
-// ── Download ───────────────────────────────────────────────────────
-downloadBtn.addEventListener("click", () => {
+// ── Download XLSX ──────────────────────────────────────────────────
+document.getElementById("downloadXlsx").addEventListener("click", function() {
   if (!outputRows) return;
-  const ws = XLSX.utils.json_to_sheet(outputRows, { header: ["student", "course", "combinedscore"] });
-  const wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.json_to_sheet(outputRows, { header: ["student", "course", "combinedscore"] });
+  var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Matches");
   XLSX.writeFile(wb, "draftmatch.xlsx");
+});
+
+// ── Download CSV ───────────────────────────────────────────────────
+document.getElementById("downloadCsv").addEventListener("click", function() {
+  if (!outputRows) return;
+  var lines = ["student,course,combinedscore"];
+  for (var i = 0; i < outputRows.length; i++) {
+    var r = outputRows[i];
+    // Quote fields that might contain commas (defensive)
+    lines.push(csvField(r.student) + "," + csvField(r.course) + "," + r.combinedscore);
+  }
+  var blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  downloadBlob(blob, "draftmatch.csv");
+});
+
+function csvField(val) {
+  var s = String(val);
+  if (s.indexOf(",") !== -1 || s.indexOf('"') !== -1 || s.indexOf("\n") !== -1) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+function downloadBlob(blob, filename) {
+  var a = document.createElement("a");
+  var url = URL.createObjectURL(blob);
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ── Example data ───────────────────────────────────────────────────
+var EXAMPLES = [
+  {
+    name: "1 of 12: One-to-one \u2014 simplest case (1 student, 1 course, 1 slot)",
+    students: [
+      { studentid: "Alice", preferredcourse: "CS101", nonpreferredcourse: "" }
+    ],
+    courses: [
+      { course: "CS101", numbertaslots: 1, preferredstudents: "Alice", nonpreferredstudents: "" }
+    ]
+  },
+  {
+    name: "2 of 12: Perfect match \u2014 mutual first choices",
+    students: [
+      { studentid: "Alice", preferredcourse: "CS101", nonpreferredcourse: "" },
+      { studentid: "Bob", preferredcourse: "CS201", nonpreferredcourse: "" }
+    ],
+    courses: [
+      { course: "CS101", numbertaslots: 1, preferredstudents: "Alice", nonpreferredstudents: "" },
+      { course: "CS201", numbertaslots: 1, preferredstudents: "Bob", nonpreferredstudents: "" }
+    ]
+  },
+  {
+    name: "3 of 12: Surplus students \u2014 3 students, 1 slot, 2 go to CS00",
+    students: [
+      { studentid: "Alice", preferredcourse: "CS101", nonpreferredcourse: "" },
+      { studentid: "Bob", preferredcourse: "CS101", nonpreferredcourse: "" },
+      { studentid: "Carol", preferredcourse: "CS101", nonpreferredcourse: "" }
+    ],
+    courses: [
+      { course: "CS101", numbertaslots: 1, preferredstudents: "Alice", nonpreferredstudents: "" }
+    ]
+  },
+  {
+    name: "4 of 12: Surplus slots \u2014 1 student, 3 slots, 2 show \u201ctodo\u201d",
+    students: [
+      { studentid: "Alice", preferredcourse: "CS101", nonpreferredcourse: "" }
+    ],
+    courses: [
+      { course: "CS101", numbertaslots: 3, preferredstudents: "Alice", nonpreferredstudents: "" }
+    ]
+  },
+  {
+    name: "5 of 12: Competing \u2014 two students want same slot, course preference breaks tie",
+    students: [
+      { studentid: "Alice", preferredcourse: "CS101", nonpreferredcourse: "" },
+      { studentid: "Bob", preferredcourse: "CS101", nonpreferredcourse: "" }
+    ],
+    courses: [
+      { course: "CS101", numbertaslots: 1, preferredstudents: "Bob", nonpreferredstudents: "" },
+      { course: "CS201", numbertaslots: 1, preferredstudents: "", nonpreferredstudents: "" }
+    ]
+  },
+  {
+    name: "6 of 12: Nonpreferred avoidance \u2014 student avoids disliked course",
+    students: [
+      { studentid: "Alice", preferredcourse: "", nonpreferredcourse: "CS201" }
+    ],
+    courses: [
+      { course: "CS101", numbertaslots: 1, preferredstudents: "", nonpreferredstudents: "" },
+      { course: "CS201", numbertaslots: 1, preferredstudents: "", nonpreferredstudents: "Alice" }
+    ]
+  },
+  {
+    name: "7 of 12: No preferences \u2014 all scores zero, everyone still placed",
+    students: [
+      { studentid: "Alice", preferredcourse: "", nonpreferredcourse: "" },
+      { studentid: "Bob", preferredcourse: "", nonpreferredcourse: "" }
+    ],
+    courses: [
+      { course: "CS101", numbertaslots: 1, preferredstudents: "", nonpreferredstudents: "" },
+      { course: "CS201", numbertaslots: 1, preferredstudents: "", nonpreferredstudents: "" }
+    ]
+  },
+  {
+    name: "8 of 12: Multi-slot \u2014 one course with 3 slots, ranked student prefs",
+    students: [
+      { studentid: "Alice", preferredcourse: "CS101", nonpreferredcourse: "" },
+      { studentid: "Bob", preferredcourse: "CS101", nonpreferredcourse: "" },
+      { studentid: "Carol", preferredcourse: "CS101", nonpreferredcourse: "" }
+    ],
+    courses: [
+      { course: "CS101", numbertaslots: 3, preferredstudents: "Alice, Bob, Carol", nonpreferredstudents: "" }
+    ]
+  },
+  {
+    name: "9 of 12: Displacement chain \u2014 bumped student cannot displace, goes to CS00",
+    students: [
+      { studentid: "Alice", preferredcourse: "CS101", nonpreferredcourse: "" },
+      { studentid: "Bob", preferredcourse: "CS101", nonpreferredcourse: "" },
+      { studentid: "Carol", preferredcourse: "CS201", nonpreferredcourse: "" }
+    ],
+    courses: [
+      { course: "CS101", numbertaslots: 1, preferredstudents: "Bob", nonpreferredstudents: "" },
+      { course: "CS201", numbertaslots: 1, preferredstudents: "Carol", nonpreferredstudents: "" }
+    ]
+  },
+  {
+    name: "10 of 12: Ranked preferences \u2014 correct scoring across 3 preferred courses",
+    students: [
+      { studentid: "Alice", preferredcourse: "CS101, CS201, CS301", nonpreferredcourse: "" }
+    ],
+    courses: [
+      { course: "CS101", numbertaslots: 1, preferredstudents: "Alice", nonpreferredstudents: "" },
+      { course: "CS201", numbertaslots: 1, preferredstudents: "Alice", nonpreferredstudents: "" },
+      { course: "CS301", numbertaslots: 1, preferredstudents: "Alice", nonpreferredstudents: "" }
+    ]
+  },
+  {
+    name: "11 of 12: Parsing \u2014 mixed comma and whitespace separators",
+    students: [
+      { studentid: "Alice", preferredcourse: "CS101,CS201", nonpreferredcourse: "" },
+      { studentid: "Bob", preferredcourse: "CS201  CS101", nonpreferredcourse: "" }
+    ],
+    courses: [
+      { course: "CS101", numbertaslots: 1, preferredstudents: "Alice,  Bob", nonpreferredstudents: "" },
+      { course: "CS201", numbertaslots: 1, preferredstudents: "Bob , Alice", nonpreferredstudents: "" }
+    ]
+  },
+  {
+    name: "12 of 12: Mutual dislike \u2014 forced match at -200",
+    students: [
+      { studentid: "Alice", preferredcourse: "", nonpreferredcourse: "CS101" }
+    ],
+    courses: [
+      { course: "CS101", numbertaslots: 1, preferredstudents: "", nonpreferredstudents: "Alice" }
+    ]
+  }
+];
+
+exampleBtn.addEventListener("click", function() {
+  exampleIndex = (exampleIndex + 1) % EXAMPLES.length;
+  var ex = EXAMPLES[exampleIndex];
+
+  exampleLabel.textContent = "Example " + ex.name;
+
+  studentData = ex.students;
+  courseData = ex.courses;
+
+  studentStatus.textContent = "Example \u2014 " + ex.students.length + " student" + (ex.students.length !== 1 ? "s" : "");
+  courseStatus.textContent = "Example \u2014 " + ex.courses.length + " course" + (ex.courses.length !== 1 ? "s" : "");
+  studentDrop.classList.add("loaded");
+  courseDrop.classList.add("loaded");
+
+  renderInputTable("studentTable", ex.students);
+  renderInputTable("courseTable", ex.courses);
+  showInputPreviews();
+  updateRunButton();
+  hideError();
+
+  // Auto-run
+  runBtn.click();
 });
 </script>
 </body>

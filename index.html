@@ -800,6 +800,164 @@ function downloadBlob(blob, filename) {
   URL.revokeObjectURL(url);
 }
 
+// ── Realistic demo data generator (JS port of gen_demo_data.py) ────
+function gen_demo_data() {
+  // Seeded PRNG (mulberry32)
+  function mkRng(seed) {
+    var s = seed | 0;
+    return function() {
+      s = (s + 0x6D2B79F5) | 0;
+      var t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function randInt(rng, lo, hi) { return lo + Math.floor(rng() * (hi - lo + 1)); }
+
+  function shuffle(rng, arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(rng() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  function sample(rng, arr, n) { return shuffle(rng, arr).slice(0, n); }
+
+  function choice(rng, arr) { return arr[Math.floor(rng() * arr.length)]; }
+
+  // Course definitions (40 total)
+  var courses100 = ["cs101","cs105","cs124","cs125","cs128"];
+  var courses200 = ["cs173","cs211","cs225","cs233","cs241","cs374"];
+  var courses400 = ["cs411","cs421","cs425","cs427","cs428","cs431","cs433","cs438",
+                    "cs446","cs461","cs466","cs473","cs476","cs484","cs491",
+                    "cs498abd","cs498rk2"];
+  var courses500 = ["cs510","cs523","cs525","cs526","cs533","cs546","cs547",
+                    "cs554","cs556","cs576","cs583","cs591"];
+  var allCourses = courses100.concat(courses200, courses400, courses500);
+
+  var slots = {};
+  courses100.forEach(function(c) { slots[c] = 10; });
+  courses200.forEach(function(c) { slots[c] = 6; });
+  courses400.forEach(function(c) { slots[c] = 1; });
+  courses500.forEach(function(c) { slots[c] = 1; });
+
+  // Student IDs: 6 lowercase letters + 1 digit
+  var rng0 = mkRng(42);
+  var alpha = "abcdefghijklmnopqrstuvwxyz";
+  var studentIds = [], seen = {};
+  while (studentIds.length < 100) {
+    var sid = "";
+    for (var k = 0; k < 6; k++) sid += alpha[Math.floor(rng0() * 26)];
+    sid += String(Math.floor(rng0() * 10));
+    if (!seen[sid]) { seen[sid] = true; studentIds.push(sid); }
+  }
+
+  // Interest groups
+  var groups = [
+    { courses: ["cs233","cs241","cs431","cs433","cs438","cs461","cs525","cs526"], count: 20 },
+    { courses: ["cs446","cs484","cs498abd","cs547","cs583","cs498rk2"], count: 18 },
+    { courses: ["cs173","cs374","cs421","cs473","cs476","cs510","cs523"], count: 15 },
+    { courses: ["cs101","cs105","cs124","cs125","cs128","cs211","cs225"], count: 17 },
+    { courses: ["cs411","cs425","cs427","cs428","cs466","cs546","cs591"], count: 13 },
+    { courses: ["cs421","cs427","cs476","cs510","cs533","cs576"], count: 8 },
+    { courses: ["cs428","cs466","cs491","cs554","cs498rk2"], count: 5 },
+    { courses: ["cs427","cs461","cs526","cs533"], count: 4 }
+  ];
+
+  var rngG = mkRng(7);
+  var assignments = []; // [sid, groupCourses]
+  var idx = 0;
+  for (var g = 0; g < groups.length; g++) {
+    for (var j = 0; j < groups[g].count && idx < 100; j++, idx++) {
+      assignments.push([studentIds[idx], groups[g].courses]);
+    }
+  }
+  for (; idx < 100; idx++) {
+    assignments.push([studentIds[idx], sample(rngG, allCourses, 4)]);
+  }
+
+  // Build student rows
+  var rng2 = mkRng(101);
+  var students = [];
+  for (var i = 0; i < assignments.length; i++) {
+    var aSid = assignments[i][0], gc = assignments[i][1];
+    var numPref = randInt(rng2, 2, Math.min(4, gc.length));
+    var preferred = sample(rng2, gc, numPref);
+    if (rng2() < 0.30) {
+      var outside = allCourses.filter(function(c) { return preferred.indexOf(c) === -1; });
+      preferred.push(choice(rng2, outside));
+    }
+    var nonpreferred = [];
+    if (rng2() < 0.35) {
+      var cands = allCourses.filter(function(c) { return preferred.indexOf(c) === -1; });
+      nonpreferred = sample(rng2, cands, randInt(rng2, 1, 2));
+    }
+    students.push({
+      studentid: aSid,
+      preferredcourse: preferred.join(", "),
+      nonpreferredcourse: nonpreferred.join(", ")
+    });
+  }
+
+  // Map course → applicants / avoiders
+  var applicants = {}, avoiders = {};
+  allCourses.forEach(function(c) { applicants[c] = []; avoiders[c] = []; });
+  students.forEach(function(s) {
+    s.preferredcourse.split(",").forEach(function(t) {
+      t = t.trim(); if (t && applicants[t]) applicants[t].push(s.studentid);
+    });
+    s.nonpreferredcourse.split(",").forEach(function(t) {
+      t = t.trim(); if (t && avoiders[t]) avoiders[t].push(s.studentid);
+    });
+  });
+
+  // Build course rows
+  var rng3 = mkRng(202);
+  var courses = [];
+  for (var ci = 0; ci < allCourses.length; ci++) {
+    var cn = allCourses[ci];
+    var apps = applicants[cn].slice(), avoids = avoiders[cn].slice();
+    var nSlots = slots[cn];
+    var prefStu = [], nonprefStu = [];
+
+    if (apps.length > nSlots) {
+      var shortlist = Math.min(apps.length, nSlots + randInt(rng3, 1, 3));
+      prefStu = shuffle(rng3, apps).slice(0, shortlist);
+    } else if (apps.length > 0) {
+      prefStu = shuffle(rng3, apps);
+      if (rng3() < 0.25) {
+        var extras = studentIds.filter(function(s) { return prefStu.indexOf(s) === -1; });
+        if (extras.length) prefStu.push(choice(rng3, extras));
+      }
+    } else {
+      if (rng3() < 0.20) prefStu = sample(rng3, studentIds, randInt(rng3, 1, 2));
+    }
+
+    if (avoids.length && rng3() < 0.40) {
+      nonprefStu = sample(rng3, avoids, Math.min(avoids.length, randInt(rng3, 1, 2)));
+    } else if (rng3() < 0.08) {
+      var others = studentIds.filter(function(s) { return prefStu.indexOf(s) === -1; });
+      if (others.length) nonprefStu = [choice(rng3, others)];
+    }
+
+    courses.push({
+      course: cn,
+      numbertaslots: nSlots,
+      preferredstudents: prefStu.join(", "),
+      nonpreferredstudents: nonprefStu.join(", ")
+    });
+  }
+
+  return {
+    name: "Realistic UIUC demo \u2014 100 students, 40 courses, 115 TA slots",
+    students: students,
+    courses: courses
+  };
+}
+
 // ── Example data ───────────────────────────────────────────────────
 var EXAMPLES = [
   {
@@ -931,8 +1089,8 @@ var EXAMPLES = [
 ];
 
 exampleBtn.addEventListener("click", function() {
-  exampleIndex = (exampleIndex + 1) % EXAMPLES.length;
-  var ex = EXAMPLES[exampleIndex];
+  exampleIndex = (exampleIndex + 1) % (EXAMPLES.length + 1);
+  var ex = exampleIndex === 0 ? gen_demo_data() : EXAMPLES[exampleIndex - 1];
 
   exampleLabelEl.textContent = "Example " + ex.name;
 

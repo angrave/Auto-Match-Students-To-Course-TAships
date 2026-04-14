@@ -1,5 +1,7 @@
 # TA Slot Matcher
 
+
+<img src="WebScreenshot.jpg" width="50%">
 Matching grad students to TA positions is a recurring headache for large departments. Students have course preferences; courses (instructors) have student preferences.
 
 This demonstration tool automates the process using a variant of the **Gale-Shapley stable marriage algorithm** (specifically, the hospital-resident formulation). Both students and courses rank each other, and the algorithm finds a stable matching — one where no unmatched student-course pair would both prefer each other over their current assignment. The github repo contains example data, and implementation in python and javascript that can read Excel files. 

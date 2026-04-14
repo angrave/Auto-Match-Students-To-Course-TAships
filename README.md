@@ -1,8 +1,12 @@
 # TA Slot Matcher
 
-Matching grad students to TA positions is a recurring headache for CS departments. Students have course preferences; courses (instructors) have student preferences. Doing this by hand leads to slow, inconsistent results that leave people unhappy.
+Matching grad students to TA positions is a recurring headache for large departments. Students have course preferences; courses (instructors) have student preferences.
 
-This tool automates the process using a variant of the **Gale-Shapley stable marriage algorithm** (specifically, the hospital-resident formulation). Both students and courses rank each other, and the algorithm finds a stable matching — one where no unmatched student-course pair would both prefer each other over their current assignment.
+This demonstration tool automates the process using a variant of the **Gale-Shapley stable marriage algorithm** (specifically, the hospital-resident formulation). Both students and courses rank each other, and the algorithm finds a stable matching — one where no unmatched student-course pair would both prefer each other over their current assignment. The github repo contains example data, and implementation in python and javascript that can read Excel files. 
+
+This tool is deliberately simplified for discussion and demonstration purposes.
+
+The live version is at https://angrave.github.io/Auto-Match-Students-To-Course-TAships/
 
 Each match gets a **combined score** (-200 to +200) so coordinators can review the result and spot cases that need manual adjustment before finalizing.
 
